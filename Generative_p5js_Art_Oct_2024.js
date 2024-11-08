@@ -1,87 +1,58 @@
-let organicForms = [];
+let colors;
+let spacing = 25;           // Larger spacing for fewer shapes
+let maxDistort = 5;         // Minimal distortion for a subtle glitch effect
+let noiseScale = 0.04;      // Moderate noise scale for performance
 
 function setup() {
-  createCanvas(600, 600);
-  noLoop();  // Only draw once
-
-  // Create several organic shapes with random positions, sizes, and 
-variations
-  for (let i = 0; i < 5; i++) {
-    let form = new OrganicShape(random(100, width - 100), random(100, 
-height - 100), random(80, 150), random(0.4, 0.8));
-    form.generateShape();
-    organicForms.push(form);
-  }
+  createCanvas(800, 800);   // Create a canvas of size 800x800 pixels
+  noLoop();  // Draw once for generative art
+  colors = [
+    color(230, 90, 50),  // Orange-red
+    color(20, 20, 20),   // Black
+    color(40, 160, 90),  // Muted green
+    color(240, 200, 150) // Pale beige
+  ];
+  drawPattern();
 }
 
-function draw() {
-  background(255);  // Clear the canvas with a white background
-  organicForms.forEach(form => {
-    form.drawShape();   // Draw the outline of each organic shape
-    form.stippleShading();  // Apply the enhanced stippling shading effect 
-inside each shape
-  });
-}
+function drawPattern() {
+  background(240);  // Light background for contrast
 
-class OrganicShape {
-  constructor(x, y, baseRadius, variation) {
-    this.x = x;
-    this.y = y;
-    this.baseRadius = baseRadius;
-    this.variation = variation;
-    this.points = [];
-  }
+  for (let x = 0; x < width; x += spacing) {
+    for (let y = 0; y < height; y += spacing) {
+      // Apply a small distortion using noise for a subtle effect
+      let xDistort = map(noise(x * noiseScale, y * noiseScale), 0, 1, -maxDistort, maxDistort);
+      let yDistort = map(noise(x * noiseScale + 50, y * noiseScale + 50), 0, 1, -maxDistort, maxDistort);
 
-  // Generate a sharp, jagged shape using Perlin noise and randomness
-  generateShape() {
-    this.points = [];
-    let noiseScale = 1.0;  // Increase the noise scale for more pronounced 
-randomness
-    for (let angle = 0; angle < TWO_PI; angle += TWO_PI / 150) {  // High 
-resolution for detailed shapes
-      let noiseFactor = noise(cos(angle) * noiseScale, sin(angle) * 
-noiseScale);
+      let posX = x + xDistort;
+      let posY = y + yDistort;
+
+      let shapeSize = spacing * 0.7;  // Fixed size for consistency
+
+      let col = colors[int(random(colors.length))];
+      fill(col);
+      noStroke();
+
+      // Draw shapes symmetrically across four quadrants
+      push();
+      translate(width / 2, height / 2);
+
+      drawMirroredShape(posX - width / 2, posY - height / 2, shapeSize);
+      drawMirroredShape(-posX + width / 2, posY - height / 2, shapeSize);
+      drawMirroredShape(posX - width / 2, -posY + height / 2, shapeSize);
+      drawMirroredShape(-posX + width / 2, -posY + height / 2, shapeSize);
       
-      // Create jagged, uneven protrusions and dips
-      let randomJaggedness = random(0.8, 2);  // Introduce larger 
-variations to create sharp points
-      let r = this.baseRadius + map(noiseFactor * randomJaggedness, 0, 1, 
--this.variation * this.baseRadius, this.variation * this.baseRadius * 
-2.5);  // Sharper protrusions
-      
-      // Calculate x and y based on angle and radius
-      let x = r * cos(angle);
-      let y = r * sin(angle);
-      this.points.push(createVector(x, y));
+      pop();
     }
   }
+}
 
-  // Draw the generated jagged, organic shape
-  drawShape() {
-    push();
-    translate(this.x, this.y);
-    noFill();
-    stroke(0);
-    strokeWeight(1);  // Thin stroke for the outline
-    beginShape();
-    this.points.forEach(p => vertex(p.x, p.y));
-    endShape(CLOSE);
-    pop();
+// Function to draw a simple shape
+function drawMirroredShape(x, y, size) {
+  // Alternate between an ellipse and a rectangle
+  if (random(1) > 0.5) {
+    ellipse(x, y, size, size);
+  } else {
+    rect(x - size / 2, y - size / 2, size, size);
   }
-
-  // Enhanced stippling effect for shading inside the shape
-  stippleShading() {
-    let stipplingDensity = 4000;  // Number of dots inside the shape for 
-dense shading
-    for (let i = 0; i < stipplingDensity; i++) {
-      let p = this.randomPointInside();  // Get a random point inside the 
-shape
-      if (p) {
-        let distToCenter = dist(this.x, this.y, p.x, p.y);
-        let maxDist = this.baseRadius;
-
-        // Larger dots in darker, shadowed areas (closer to the center or 
-concave regions)
-        let shadowFactor = map(distToCenter, 0, maxDist, 1, 0);
-        let
-
+}
